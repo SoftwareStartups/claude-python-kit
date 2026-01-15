@@ -1,0 +1,9 @@
+{
+  "name": "python-tools",
+  "version": "0.1.0",
+  "description": "Python development tools for Claude Code workflows",
+  "author": {
+    "name": "SoftwareStartups",
+    "url": "https://github.com/SoftwareStartups"
+  }
+}
