@@ -1,0 +1,9 @@
+{
+  "enabledPlugins": {
+    "plugin-dev@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "python-tools@claudeworks": true,
+    "workflow@claudeworks": true
+  }
+}
