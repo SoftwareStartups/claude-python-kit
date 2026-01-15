@@ -72,38 +72,109 @@ Group 2: "fix: resolve navigation bugs"
   - mno7890 - fix menu collapse
 ```
 
-### Step 5: Execute Rebase
+### Step 5: Execute Cleanup
 
 Once the user approves the grouping:
 
-1. Create a backup branch:
+**Decision Tree:**
+
+```
+Need reordering? ──yes──> Soft Reset (Phase B)
+       │
+       no
+       │
+       v
+Try Rebase (Phase A) ──conflicts──> Soft Reset (Phase B)
+       │
+       no conflicts
+       │
+       v
+    Success!
+```
+
+**1. Create a backup branch:**
+
+```bash
+git branch backup-before-cleanup
+```
+
+**2. Determine approach:**
+
+- **Same-order grouping** (commits stay in original order, just squash adjacent ones) → Phase A
+- **Reordering needed** (commits need to be regrouped non-adjacently) → Phase B
+
+#### Phase A: Non-Interactive Rebase (preferred)
+
+Reference the `git-rebase` skill for details on non-interactive rebase.
+
+1. Create a rebase script that writes the plan:
 
    ```bash
-   git branch backup-before-cleanup
+   #!/bin/bash
+   cat > "$1" << 'EOF'
+   pick abc1234 First group's first commit
+   fixup def5678 First group's second commit
+   pick ghi9012 Second group's first commit
+   fixup jkl3456 Second group's second commit
+   EOF
    ```
 
-2. For each group, use fixup commits. Reset to the starting commit and recommit in groups:
+2. Execute non-interactive rebase:
 
    ```bash
-   # Option A: Use --autosquash with fixup commits already in place
-   GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash <starting-commit>~
-
-   # Option B: If restructuring is needed, use soft reset and recommit
-   git reset --soft <starting-commit>~
-   # Then stage and commit files in logical groups
+   chmod +x /tmp/rebase-script.sh
+   GIT_SEQUENCE_EDITOR=/tmp/rebase-script.sh git rebase -i --root
    ```
 
-3. After restructuring commits, rebase onto origin/main:
+3. If conflicts occur:
 
    ```bash
-   git rebase origin/main
+   git rebase --abort
    ```
 
-4. Show the result:
+   Then proceed to Phase B.
+
+#### Phase B: Soft Reset (fallback for reordering)
+
+Use this when reordering is needed or rebase fails with conflicts.
+
+**How it works:** Soft reset removes all commits but keeps files staged. New commits **replace** the old ones on the branch (old commits only exist on the backup branch).
+
+1. Remove all commits (keeps files staged):
 
    ```bash
-   git log --oneline origin/main..HEAD
+   git update-ref -d HEAD
    ```
+
+2. Unstage all files:
+
+   ```bash
+   git reset
+   ```
+
+3. For each group, stage and commit the relevant files:
+
+   ```bash
+   git add <files-for-group-1>
+   git commit -m "feat: group 1 message"
+
+   git add <files-for-group-2>
+   git commit -m "feat: group 2 message"
+   # ... repeat for each group
+   ```
+
+**3. Rebase onto origin/main (if not already on main):**
+
+```bash
+git fetch
+git rebase origin/main
+```
+
+**4. Show the result:**
+
+```bash
+git log --oneline origin/main..HEAD
+```
 
 ### Step 6: Final Review
 

@@ -58,6 +58,51 @@ If correct:
 git push -f
 ```
 
+## Non-Interactive Rebase
+
+When automating rebase (e.g., in scripts or Claude Code), use `GIT_SEQUENCE_EDITOR` to provide the rebase plan non-interactively.
+
+**1. Create a rebase script:**
+
+```bash
+#!/bin/bash
+cat > "$1" << 'EOF'
+pick abc1234 First commit message
+fixup def5678 Second commit (squash into first)
+pick ghi9012 Third commit message
+fixup jkl3456 Fourth commit (squash into third)
+EOF
+```
+
+**2. Execute non-interactive rebase:**
+
+```bash
+chmod +x /tmp/rebase-script.sh
+GIT_SEQUENCE_EDITOR=/tmp/rebase-script.sh git rebase -i --root
+```
+
+**Rebase commands:**
+| Command | Effect |
+|---------|--------|
+| `pick` | Keep commit as-is |
+| `fixup` | Squash into previous, discard message |
+| `squash` | Squash into previous, combine messages |
+| `reword` | Keep commit, edit message |
+| `drop` | Remove commit |
+
+## When Rebase Won't Work
+
+Rebase fails with conflicts when **reordering** commits that have dependencies:
+
+```
+# This will conflict if commit B modifies files created by commit C
+pick A
+fixup C  # Was originally after B
+pick B   # Creates files that C modifies
+```
+
+**Solution:** Use the soft reset approach in `/cleanup-commits` command, which avoids conflicts by removing all commits and recommitting in logical groups.
+
 ## Merge to Main
 
 After PR approval, merge with a merge commit to preserve branch history:
